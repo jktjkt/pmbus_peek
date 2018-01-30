@@ -1161,7 +1161,14 @@ void status_byte(struct pmbus_dev *pmdev, u16 cmd, char *label, char *bits[])
 static void show_status_vout(struct pmbus_dev *pmdev)
 {
 	static char *bits[8] = {
-		/* FIXME list the bit labels */
+		"VOUT Tracking Error",
+		"TOFF_MAX_WARNING",
+		"TON_MAX_FAULT",
+		"Attempted to exceed VOUT_MAX",
+		"Output Undervoltage Fault",
+		"Output Undervoltage Warning",
+		"Output Overvoltage Warning",
+		"Output Overvoltage Fault",
 	};
 
 	status_byte(pmdev, PMB_STATUS_VOUT, "VOUT", bits);
@@ -1170,7 +1177,14 @@ static void show_status_vout(struct pmbus_dev *pmdev)
 static void show_status_iout(struct pmbus_dev *pmdev)
 {
 	static char *bits[8] = {
-		/* FIXME list the bit labels */
+		"Output Overpower Warning",
+		"Output Overpower Fault",
+		"In Power Limiting Mode",
+		"Current Share Fault",
+		"Output Undercurrent Fault",
+		"Output Overcurrent Warning",
+		"Output Overcurrent and Low Voltage Fault",
+		"Output Overcurrent Fault",
 	};
 
 	status_byte(pmdev, PMB_STATUS_IOUT, "IOUT", bits);
@@ -1179,7 +1193,14 @@ static void show_status_iout(struct pmbus_dev *pmdev)
 static void show_status_input(struct pmbus_dev *pmdev)
 {
 	static char *bits[8] = {
-		/* FIXME list the bit labels */
+		"Input Overpower Warning",
+		"Input Overcurrent Warning",
+		"Input Overcurrent Fault",
+		"Unit Off for Insufficient Input Voltage",
+		"Input Undervoltage Fault",
+		"Input Undervoltage Warning",
+		"Input Overvoltage Warning",
+		"Input Overvoltage Fault",
 	};
 
 	status_byte(pmdev, PMB_STATUS_INPUT, "INPUT", bits);
@@ -1231,7 +1252,14 @@ static void show_status_fans(struct pmbus_dev *pmdev)
 static void show_status_other(struct pmbus_dev *pmdev)
 {
 	static char *bits[8] = {
-		/* FIXME list the bit labels */
+		"(reserved)",
+		"Output OR-ing Device Fault",
+		"Input B OR-ing Device Fault",
+		"Input A OR-ing Device Fault",
+		"Input B Fuse or Circuit Breaker Fault",
+		"Input A Fuse or Circuit Breaker Fault",
+		"(reserved)",
+		"(reserved)",
 	};
 
 	status_byte(pmdev, PMB_STATUS_OTHER, "OTHER", bits);
