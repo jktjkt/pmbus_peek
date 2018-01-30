@@ -1072,11 +1072,13 @@ static void pmbus_dev_show_p1(struct pmbus_dev *pmdev)
 	switch ((pmdev->revision >> 5) & 0x07) {
 	case 0:		s1 = "1.0"; break;
 	case 1:		s1 = "1.1"; break;
+	case 2:		s1 = "1.2"; break;
 	default:	s1 = "?"; break;
 	}
 	switch (pmdev->revision & 0x1f) {
 	case 0:		s0 = "1.0"; break;
 	case 1:		s0 = "1.1"; break;
+	case 2:		s0 = "1.2"; break;
 	default:	s0 = "?"; break;
 	}
 	printf("PMBus revisions (%#02x):\tpart I, ver %s; part II, ver %s\n",
