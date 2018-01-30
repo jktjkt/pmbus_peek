@@ -71,6 +71,7 @@ enum pmbus_cmd_type {
 
 	RWP_QUERY,	/* block write/read process call for QUERY */
 	RWP_COEFF,	/* block write/read process call for COEFFICIENTS */
+	RWB_APP_PROFILE, /* block read with embedded byte count */
 
 	W0,		/* write zero bytes ("send byte", command only) */
 	W1,		/* write one byte */
@@ -172,6 +173,7 @@ struct pmbus_cmd_desc {
 #define PMB_MFR_LOCATION	0x9c
 #define PMB_MFR_DATE		0x9d
 #define PMB_MFR_SERIAL		0x9e
+#define PMB_APP_PROFILES	0x9f
 #define PMB_IC_DEVICE_ID	0xad
 #define PMB_IC_DEVICE_REV	0xae
 #define PMB_USER_DATA(x)	(0xb0 + (x))		/* 0 <= x <= 15 */
@@ -361,6 +363,8 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 		.units = STRING, .flags = FLG_SHOW_P1, },
 { .cmd = PMB_MFR_SERIAL, .tag = "mfr_serial", .type = RWB,
 		.units = STRING, .flags = FLG_SHOW_P1, },
+{ .cmd = PMB_APP_PROFILES, .tag = "app_profile_support",
+		.type = RWB_APP_PROFILE, .flags = FLG_SHOW_P1, },
 
 { .cmd = 0xa0, .tag = "mfr_vin_min", .type = R2, .units = VOLTS, },
 { .cmd = 0xa1, .tag = "mfr_vin_max", .type = R2, .units = VOLTS, },
@@ -1116,6 +1120,39 @@ static void pmbus_dev_show_p1(struct pmbus_dev *pmdev)
 	}
 	printf("\n");
 
+	if (checksupport(pmdev, PMB_APP_PROFILES) == 1) {
+		printf("Application Profiles:\n");
+
+		u8 buf[513];
+		int size = pmbus_read_block(pmdev, PMB_APP_PROFILES, sizeof(buf), buf);
+		for (int i = 0; size > 1 && i < size / 2; ++i) {
+			u8 profile_id = buf[2 * i];
+			u8 revision = buf[2 * i + 1];
+			if (profile_id == 0) {
+				printf(" No Application Profiles\n");
+			} else {
+				switch (profile_id) {
+				case 0:
+					/* handled above */
+					break;
+				case 1:
+					printf(" Server AC-DC Power Supply");
+					break;
+				case 2:
+					printf(" DC-DC Converters for Microprocessor Power and other Copmuter Applications");
+					break;
+				case 3:
+					printf(" DC-DC Converters for General-Purpose Use");
+					break;
+				default:
+					printf(" (reserved)");
+				}
+				printf(": rev %d.%d\n", (revision >> 4), (revision & 0xf));
+			}
+		}
+		printf("\n");
+	}
+
 	if (pmdev->no_query) {
 		printf("Device can't QUERY for supported commands\n");
 		return;
@@ -1433,6 +1470,9 @@ static void pmbus_dev_show_commands(struct pmbus_dev *pmdev)
 		case RWP_QUERY:
 		case RWP_COEFF:
 			format = "process_call";
+			break;
+		case RWB_APP_PROFILE:
+			format = "(Application Profile)";
 			break;
 		default:
 			format = "(UNKNOWN call syntax)";
