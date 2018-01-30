@@ -583,6 +583,7 @@ static int pmbus_read_block(struct pmbus_dev *pmdev, u16 cmd,
 	 * prevent one fault-path traversal (e.g. SMBALERT#) when the
 	 * block is bigger than the morsel allowed by SMBus.
 	 */
+	/* FIXME: this partial read breaks PEC */
 	len = pmbus_read_byte_data(pmdev->fd, cmd);
 	if (len < 0)
 		return len;
