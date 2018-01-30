@@ -1541,6 +1541,10 @@ static void pmbus_dev_show_values(struct pmbus_dev *pmdev)
 					printf("%g", d);
 				}
 				break;
+			case 1:
+				/* 16-bit unsigned */
+				printf("%d", value);
+				break;
 			case 3: {
 				double	d;
 				int r;
@@ -1570,6 +1574,10 @@ static void pmbus_dev_show_values(struct pmbus_dev *pmdev)
 				d /= (double)op->c[1].m;
 				printf("%g", d);
 				}
+				break;
+			case 4:
+				/* 8-bit unsigned */
+				printf("%d", value & 0xff);
 				break;
 			case 5:
 				printf("u16 (VID)");
