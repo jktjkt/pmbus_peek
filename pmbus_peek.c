@@ -172,6 +172,8 @@ struct pmbus_cmd_desc {
 #define PMB_MFR_LOCATION	0x9c
 #define PMB_MFR_DATE		0x9d
 #define PMB_MFR_SERIAL		0x9e
+#define PMB_IC_DEVICE_ID	0xad
+#define PMB_IC_DEVICE_REV	0xae
 #define PMB_USER_DATA(x)	(0xb0 + (x))		/* 0 <= x <= 15 */
 #define PMB_MFR_SPECIFIC(x)	(0xd0 + (x))		/* 0 <= x <= 45 */
 
@@ -372,6 +374,10 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = 0xa9, .tag = "mfr_tambient_min", .type = R2, .units = DEGREES_C, },
 { .cmd = 0xaa, .tag = "mfr_efficiency_ll", .type = RWB14, },
 { .cmd = 0xab, .tag = "mfr_efficiency_hl", .type = RWB14, },
+{ .cmd = PMB_IC_DEVICE_ID, .tag = "ic_device_id", .type = RWB,
+		.units = STRING, .flags = FLG_SHOW_P1, },
+{ .cmd = PMB_IC_DEVICE_REV, .tag = "ic_device_rev", .type = RWB,
+		.units = STRING, .flags = FLG_SHOW_P1, },
 
 { .cmd = PMB_USER_DATA(0),  .tag = "user_data_00", .type = RWB, },
 { .cmd = PMB_USER_DATA(1),  .tag = "user_data_01", .type = RWB, },
@@ -1017,8 +1023,11 @@ static void pmbus_list_inventory(struct pmbus_dev *pmdev)
 	char *location = pmbus_read_string(pmdev, PMB_MFR_LOCATION);
 	char *date = pmbus_read_string(pmdev, PMB_MFR_DATE);
 	char *serial = pmbus_read_string(pmdev, PMB_MFR_SERIAL);
+	char *ic_device_id = pmbus_read_string(pmdev, PMB_IC_DEVICE_ID);
+	char *ic_device_rev = pmbus_read_string(pmdev, PMB_IC_DEVICE_REV);
 
-	if (!mfr && !model && !revision && !location && !date && !serial)
+	if (!mfr && !model && !revision && !location && !date && !serial
+			&& !ic_device_id &&!ic_device_rev)
 		return;
 
 	/* REVISIT might be useful to fetch all these strings and save
@@ -1050,6 +1059,14 @@ static void pmbus_list_inventory(struct pmbus_dev *pmdev)
 	if (serial) {
 		printf("  Serial:\t\t%s\n", serial);
 		free(serial);
+	}
+	if (ic_device_id) {
+		printf("  IC Device:\t\t%s\n", ic_device_id);
+		free(ic_device_id);
+	}
+	if (ic_device_rev) {
+		printf("  IC Device Revision:\t\t%s\n", ic_device_rev);
+		free(ic_device_rev);
 	}
 	printf("\n");
 }
