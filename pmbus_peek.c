@@ -1781,8 +1781,10 @@ int main(int argc, char **argv)
 	bool			list = false;
 	bool			show = false;
 	u8			mfr_cmd = 0;
+	char			*page_str = NULL;
+	int			page = -1;
 
-	while ((c = getopt(argc, argv, "b:Cflpsv"
+	while ((c = getopt(argc, argv, "b:Cfg:lpsv"
 #ifdef HACK
 			"m:"
 #endif
@@ -1796,6 +1798,9 @@ int main(int argc, char **argv)
 			continue;
 		case 'f':
 			force = true;
+			continue;
+		case 'g':
+			page_str = optarg;
 			continue;
 		case 'l':
 			list = true;
@@ -1846,6 +1851,15 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%#02x' is a reserved device address\n",
 				addr);
 		goto usage;
+	}
+
+	if (page_str) {
+		char *end;
+		page = (int)strtol(page_str, &end, 0);
+		if (*end || page < 0 || page > 0xff) {
+			fprintf(stderr, "'%s' is not a valid PAGE number\n", page_str);
+			goto usage;
+		}
 	}
 
 	/*
@@ -1905,6 +1919,14 @@ int main(int argc, char **argv)
 	if (pmbus_dev_scan(&dev) < 0)
 		return 1;
 
+	if (page != -1) {
+		c = pmbus_write_byte_data(dev.fd, 0x00, page);
+		if (c < 0) {
+			fprintf(stderr, "PAGE command failed: %s\n", strerror(c));
+			return 1;
+		}
+	}
+
 	if (show || list)
 		pmbus_dev_show(&dev, show, list);
 
@@ -1945,6 +1967,7 @@ usage:
 		"  -C               clear all status flags\n"
 		"  -f               bypass 'address in use' checks\n"
 		"                   (needed with new-style I2C systems)\n"
+		"  -g 0x01          specify PAGE number to use\n"
 		"  -l               list device capabilities\n"
 #ifdef HACK
 		"  -m NN            issue no-param mfr_specific_NN\n"
