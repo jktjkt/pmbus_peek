@@ -586,11 +586,22 @@ static int pmbus_read_block(struct pmbus_dev *pmdev, u16 cmd,
 	/* Handle "large" blocks sanely by issuing an extra read to
 	 * prevent one fault-path traversal (e.g. SMBALERT#) when the
 	 * block is bigger than the morsel allowed by SMBus.
+	 * As we are only reading a part of the packet from the slave,
+	 * we have to temporarily disable PEC.
 	 */
-	/* FIXME: this partial read breaks PEC */
+	if (pmdev->use_pec) {
+		if (ioctl(pmdev->fd, I2C_PEC, 0)) {
+			fprintf(stderr, "Cannot temporarily disable PEC");
+		}
+	}
 	len = pmbus_read_byte_data(pmdev->fd, cmd);
 	if (len < 0)
 		return len;
+	if (pmdev->use_pec) {
+		if (ioctl(pmdev->fd, I2C_PEC, 1)) {
+			fprintf(stderr, "Cannot re-enable PEC");
+		}
+	}
 
 	if (len > I2C_SMBUS_BLOCK_MAX) {
 		retval = -EFBIG;
