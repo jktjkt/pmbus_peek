@@ -571,17 +571,12 @@ static int pmbus_read_word_data(int fd, u16 cmd)
 	return word;
 }
 
-/* Returns the number of bytes copied into read_buf, or negative errno.
- * If the block is bigger than read_len, read_len is copied and -E2BIG
- * is returned (so the caller can recover, somewhat).
- */
-static int pmbus_read_block(struct pmbus_dev *pmdev, u16 cmd,
-		unsigned read_len, u8 *read_buf)
+static int pmbus_read_block_without_checking(struct pmbus_dev *pmdev, u16 cmd,
+		unsigned read_len, int advertised_len, u8 *read_buf)
 {
 	struct i2c_smbus_ioctl_data	arg;
 	union i2c_smbus_data		data;
 	int				retval;
-	int				len;
 
 	if (!read_buf || read_len == 0)
 		return -EINVAL;
@@ -593,27 +588,7 @@ static int pmbus_read_block(struct pmbus_dev *pmdev, u16 cmd,
 	if (!is_pmb_8bit(cmd))
 		return -EINVAL;
 
-	/* Handle "large" blocks sanely by issuing an extra read to
-	 * prevent one fault-path traversal (e.g. SMBALERT#) when the
-	 * block is bigger than the morsel allowed by SMBus.
-	 * As we are only reading a part of the packet from the slave,
-	 * we have to temporarily disable PEC.
-	 */
-	if (pmdev->use_pec) {
-		if (ioctl(pmdev->fd, I2C_PEC, 0)) {
-			fprintf(stderr, "Cannot temporarily disable PEC");
-		}
-	}
-	len = pmbus_read_byte_data(pmdev->fd, cmd);
-	if (len < 0)
-		return len;
-	if (pmdev->use_pec) {
-		if (ioctl(pmdev->fd, I2C_PEC, 1)) {
-			fprintf(stderr, "Cannot re-enable PEC");
-		}
-	}
-
-	if (len > I2C_SMBUS_BLOCK_MAX) {
+	if (advertised_len > I2C_SMBUS_BLOCK_MAX) {
 		retval = -EFBIG;
 		goto try_i2c;
 	}
@@ -672,7 +647,7 @@ try_i2c:
 		msg[0].buf = buf;
 
 		msg[1].flags = I2C_M_RD;
-		msg[1].len = len + 1;
+		msg[1].len = advertised_len + 1;
 		msg[1].buf = buf;
 
 		if (ioctl(pmdev->fd, I2C_RDWR, &msgdat) < 0)
@@ -686,6 +661,51 @@ try_i2c:
 	}
 
 	return retval;
+}
+
+/* Returns the number of bytes copied into read_buf, or negative errno.
+ * If the block is bigger than read_len, read_len is copied and -E2BIG
+ * is returned (so the caller can recover, somewhat).
+ */
+static int pmbus_read_block(struct pmbus_dev *pmdev, u16 cmd,
+		unsigned read_len, u8 *read_buf)
+{
+	struct i2c_smbus_ioctl_data	arg;
+	union i2c_smbus_data		data;
+	int				retval;
+	int				len;
+
+	if (!read_buf || read_len == 0)
+		return -EINVAL;
+
+	/* use i2c; or READ_I2C_BLOCK_2: 2 byte cmd, N byte block */
+	if (is_pmb_extended(cmd))
+		return -ENOSYS;
+
+	if (!is_pmb_8bit(cmd))
+		return -EINVAL;
+
+	/* Handle "large" blocks sanely by issuing an extra read to
+	 * prevent one fault-path traversal (e.g. SMBALERT#) when the
+	 * block is bigger than the morsel allowed by SMBus.
+	 * As we are only reading a part of the packet from the slave,
+	 * we have to temporarily disable PEC.
+	 */
+	if (pmdev->use_pec) {
+		if (ioctl(pmdev->fd, I2C_PEC, 0)) {
+			fprintf(stderr, "Cannot temporarily disable PEC");
+		}
+	}
+	len = pmbus_read_byte_data(pmdev->fd, cmd);
+	if (len < 0)
+		return len;
+	if (pmdev->use_pec) {
+		if (ioctl(pmdev->fd, I2C_PEC, 1)) {
+			fprintf(stderr, "Cannot re-enable PEC");
+		}
+	}
+
+	return pmbus_read_block_without_checking(pmdev, cmd, read_len, len, read_buf);
 }
 
 /*----------------------------------------------------------------------*/
