@@ -72,6 +72,7 @@ enum pmbus_cmd_type {
 	RWP_QUERY,	/* block write/read process call for QUERY */
 	RWP_COEFF,	/* block write/read process call for COEFFICIENTS */
 	RWB_APP_PROFILE, /* block read with embedded byte count */
+	ENERGY,		/* block read for energy counters */
 
 	W0,		/* write zero bytes ("send byte", command only) */
 	W1,		/* write one byte */
@@ -337,6 +338,8 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = PMB_STATUS_FANS_3_4, .tag = "status_fans_3_4", .type = R1,
 		.flags = FLG_STATUS, },
 
+{ .cmd = 0x86, .tag = "read_ein", .type = ENERGY, },
+{ .cmd = 0x87, .tag = "read_eout", .type = ENERGY, },
 { .cmd = 0x88, .tag = "read_vin", .type = R2, .units = VOLTS, },
 { .cmd = 0x89, .tag = "read_iin", .type = R2, .units = AMPERES, },
 { .cmd = 0x8a, .tag = "read_vcap", .type = R2, .units = VOLTS, },
@@ -1563,6 +1566,18 @@ static void pmbus_dev_show_commands(struct pmbus_dev *pmdev)
 		case RWB_APP_PROFILE:
 			format = "(Application Profile)";
 			break;
+		case ENERGY:
+			switch ((op->query >> 2) & 7) {
+			case 0:
+				format = "block(6), Energy counter (LINEAR)";
+				break;
+			case 3:
+				format = "block(6), Energy counter (DIRECT)";
+				break;
+			default:
+				format = "block(6), Energy counter (UNKNOWN)";
+			}
+			break;
 		default:
 			format = "(UNKNOWN call syntax)";
 			break;
@@ -1597,6 +1612,37 @@ static void pmbus_dev_show_commands(struct pmbus_dev *pmdev)
 			printf("\n");
 		}
 	}
+}
+
+static double pmbus_convert_from_direct(struct pmbus_cmd_desc *op, int value)
+{
+	double	d;
+	int r;
+
+	/* DIRECT encoding:
+	 *  X = ((value * (10 ^ -R)) - b) / m
+	 */
+	d = value;
+
+	/* ideally:
+	 *   d *= exp10((double)-op->c[1].R);
+	 * but that, or pow(), can be unavailable
+	 */
+	r = op->c[1].R;
+	if (r < 0) {
+		do {
+			d *= 10.0;
+			r++;
+		} while (r < 0);
+	} else if (r > 0) {
+		do {
+			d /= 10.0;
+			r--;
+		} while (r > 0);
+	}
+	d -= (double)op->c[1].b;
+	d /= (double)op->c[1].m;
+	return d;
 }
 
 static void pmbus_dev_show_values(struct pmbus_dev *pmdev)
@@ -1721,6 +1767,49 @@ static void pmbus_dev_show_values(struct pmbus_dev *pmdev)
 			default:
 				printf("unknown format");
 				break;
+			}
+			break;
+
+		case ENERGY: {
+			u8 buf[6] = {0,};
+			int size = pmbus_read_block_without_checking(pmdev, op->cmd, 6, 6, buf);
+			u16 accumulator = (buf[1] << 8) + buf[0];
+			u8 rollovers = buf[2];
+			unsigned int samples = (buf[5] << 16) + (buf[4] << 8) + buf[3];
+			printf("  %-21s %02x%02x%02x%02x%02x%02x: ", name, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5]);
+			switch ((op->query >> 2) & 7) {
+			case 0: {
+				/* linear format */
+				const int max_value = ((2 << 9) - 1) * (2 << 14); /* ((2^10) - 1) * 2^15 == 33521664 */
+				double energy_count = rollovers * max_value + accumulator;
+				printf("%g", energy_count);
+				}
+				break;
+			case 3: {
+				/* direct mode */
+				double energy_count;
+				const int y_max = ((2 << 14) - 1); /* (2^15) - 1 == 32767 */
+				int r = op->c[1].R;
+				double max_value = (double)(op->c[1].m * y_max + op->c[1].b);
+				if (r < 0) {
+					do {
+						max_value /= 10.0;
+						++r;
+					} while (r < 0);
+				} else if (r > 0) {
+					do {
+						max_value *= 10.0;
+						--r;
+					} while (r > 0);
+				}
+				energy_count = rollovers * max_value + pmbus_convert_from_direct(op, accumulator);
+				printf("%g", energy_count);
+				//printf(" [coeffs: m = %d, b = %d, R = %d]", op->c[1].m, op->c[1].b, op->c[1].R);
+				}
+				break;
+			default:
+				printf("(error: QUERY 0x%02x)", op->query);
+			}
 			}
 			break;
 #if 0
