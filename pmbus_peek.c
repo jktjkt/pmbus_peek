@@ -1586,7 +1586,7 @@ static void pmbus_dev_show_values(struct pmbus_dev *pmdev)
 						d = -d;
 					if (value & 0x8000)
 						d /= 1 <<
-							((value >> 11) & 0x0f);
+							(0x0f + 1 - (value >> 11) & 0x0f);
 					else if (value & 0x7100)
 						d *= 1 << (value >> 11);
 					printf("%g", d);
