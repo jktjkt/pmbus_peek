@@ -980,6 +980,9 @@ static void query(struct pmbus_dev *pmdev, struct pmbus_cmd_desc *op)
 		return;
 	}
 
+	/* The FSP PSUs that I'm testing this on *really* need a delay here */
+	usleep(1000);
+
 	/* NOTE eventually use copy/clone here instead of in-place mutate,
 	 * when managing multiple devices concurrently
 	 */
