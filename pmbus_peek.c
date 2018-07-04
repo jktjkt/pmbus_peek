@@ -1678,7 +1678,7 @@ static void pmbus_dev_show_values(struct pmbus_dev *pmdev)
 		case R1:
 			value = pmbus_read_byte_data(pmdev->fd, op->cmd);
 			if (value < 0) {
-				/* FIXME display a diagnostic */
+				printf("  %-21s [ERROR reading]", name);
 				continue;
 			}
 			printf("  %-21s %02x: ", name, value);
