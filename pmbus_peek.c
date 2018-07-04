@@ -151,6 +151,7 @@ struct pmbus_cmd_desc {
 #define PMB_CLEAR_FAULT		0x03
 #define PMB_CAPABILITY		0x19
 #define PMB_QUERY		0x1a
+#define PMB_VOUT_MODE		0x20
 #define PMB_COEFFICIENTS	0x30
 
 #define PMB_STATUS_BYTE		0x78
@@ -185,6 +186,7 @@ struct pmbus_cmd_desc {
 /* flags for pmbus_cmd-desc.flags */
 #define FLG_SHOW_P1		(1 << 0)
 #define FLG_STATUS		(1 << 1)
+#define FLG_FORMAT_VOUT		(1 << 2)
 
 static inline int is_pmb_8bit(u16 cmd)
 {
@@ -231,13 +233,13 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 		.flags = FLG_SHOW_P1, },
 { .cmd = PMB_QUERY, .tag = "query", .type = RWP_QUERY, },
 
-{ .cmd = 0x20, .tag = "vout_mode", .type = RW1, },
+{ .cmd = PMB_VOUT_MODE, .tag = "vout_mode", .type = RW1, },
 { .cmd = 0x21, .tag = "vout_command", .type = RW2, },
 { .cmd = 0x22, .tag = "vout_trim", .type = RW2, .units = VOLTS, },
 { .cmd = 0x23, .tag = "vout_cal_offset", .type = RW2, .units = VOLTS, },
-{ .cmd = 0x24, .tag = "vout_max", .type = RW2, .units = VOLTS, },
-{ .cmd = 0x25, .tag = "vout_margin_high", .type = RW2, .units = VOLTS, },
-{ .cmd = 0x26, .tag = "vout_margin_low", .type = RW2, .units = VOLTS, },
+{ .cmd = 0x24, .tag = "vout_max", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT },
+{ .cmd = 0x25, .tag = "vout_margin_high", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
+{ .cmd = 0x26, .tag = "vout_margin_low", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
 { .cmd = 0x27, .tag = "vout_transition_rate", .type = RW2, },
 { .cmd = 0x28, .tag = "vout_droop", .type = RW2, },
 { .cmd = 0x29, .tag = "vout_scale_loop", .type = RW2, },
@@ -259,16 +261,16 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = 0x3e, .tag = "fan_command_3", .type = RW2, },
 { .cmd = 0x3f, .tag = "fan_command_4", .type = RW2, },
 
-{ .cmd = 0x40, .tag = "vout_ov_fault_limit", .type = RW2, .units = VOLTS, },
+{ .cmd = 0x40, .tag = "vout_ov_fault_limit", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
 { .cmd = 0x41, .tag = "vout_ov_fault_response", .type = RW1, },
-{ .cmd = 0x42, .tag = "vout_ov_warn_limit", .type = RW2, .units = VOLTS, },
-{ .cmd = 0x43, .tag = "vout_uv_warn_limit", .type = RW2, .units = VOLTS, },
-{ .cmd = 0x44, .tag = "vout_uv_fault_limit", .type = RW2, .units = VOLTS, },
+{ .cmd = 0x42, .tag = "vout_ov_warn_limit", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
+{ .cmd = 0x43, .tag = "vout_uv_warn_limit", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
+{ .cmd = 0x44, .tag = "vout_uv_fault_limit", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
 { .cmd = 0x45, .tag = "vout_uv_fault_response", .type = RW1, },
 { .cmd = 0x46, .tag = "iout_oc_fault_limit", .type = RW2, .units = AMPERES, },
 { .cmd = 0x47, .tag = "iout_oc_fault_response", .type = RW1, },
 { .cmd = 0x48, .tag = "iout_oc_lv_fault_limit",
-		.type = RW2, .units = AMPERES, },
+		.type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
 { .cmd = 0x49, .tag = "iout_oc_lv_fault_response", .type = RW1, },
 { .cmd = 0x4a, .tag = "iout_oc_warn_limit", .type = RW2, .units = AMPERES, },
 { .cmd = 0x4b, .tag = "iout_uc_fault_limit", .type = RW2, .units = AMPERES, },
@@ -290,8 +292,8 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = 0x5b, .tag = "iin_oc_fault_limit", .type = RW2, .units = AMPERES, },
 { .cmd = 0x5c, .tag = "iin_oc_fault_response", .type = RW1, },
 { .cmd = 0x5d, .tag = "iin_oc_warn_limit", .type = RW2, .units = AMPERES, },
-{ .cmd = 0x5e, .tag = "power_good_on", .type = RW2, .units = VOLTS, },
-{ .cmd = 0x5f, .tag = "power_good_off", .type = RW2, .units = VOLTS, },
+{ .cmd = 0x5e, .tag = "power_good_on", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
+{ .cmd = 0x5f, .tag = "power_good_off", .type = RW2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
 
 { .cmd = 0x60, .tag = "ton_delay", .type = RW2, .units = MILLISECONDS, },
 { .cmd = 0x61, .tag = "ton_rise", .type = RW2, .units = MILLISECONDS, },
@@ -335,7 +337,7 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = 0x88, .tag = "read_vin", .type = R2, .units = VOLTS, },
 { .cmd = 0x89, .tag = "read_iin", .type = R2, .units = AMPERES, },
 { .cmd = 0x8a, .tag = "read_vcap", .type = R2, .units = VOLTS, },
-{ .cmd = 0x8b, .tag = "read_vout", .type = R2, .units = VOLTS, },
+{ .cmd = 0x8b, .tag = "read_vout", .type = R2, .units = VOLTS, .flags = FLG_FORMAT_VOUT, },
 { .cmd = 0x8c, .tag = "read_iout", .type = R2, .units = AMPERES, },
 { .cmd = 0x8d, .tag = "read_temperature_1", .type = R2, .units = DEGREES_C, },
 { .cmd = 0x8e, .tag = "read_temperature_2", .type = R2, .units = DEGREES_C, },
@@ -960,6 +962,16 @@ static void query(struct pmbus_dev *pmdev, struct pmbus_cmd_desc *op)
 		if (word & (1 << 6))	/* write */
 			coefficients(pmdev, op, 0);
 	}
+
+	if (op->cmd == PMB_VOUT_MODE) {
+		/* VOUT_MODE is a special snowflake, its coefficients are
+		 * at least per-page, not per-command.
+		 */
+		int value = pmbus_read_byte_data(pmdev->fd, op->cmd);
+		op->c[0].R = op->c[1].R = value;
+		return;
+	}
+
 }
 
 /* Return:  negative = can't tell, 0 = no, 1 = yes */
@@ -1424,6 +1436,40 @@ static void pmbus_dev_show_status(struct pmbus_dev *pmdev)
 	printf("\n");
 }
 
+static bool vout_mode_is_linear(struct pmbus_dev *pmdev)
+{
+	if (pmdev->op[PMB_VOUT_MODE] == &unsupported)
+		return false;
+
+	if (pmdev->op[PMB_VOUT_MODE]->c[0].R & 0xe0)
+		return false;
+
+	return true;
+}
+
+static double pmbus_to_vout_format(struct pmbus_dev *pmdev, const int value)
+{
+	int exponent = pmdev->op[PMB_VOUT_MODE]->c[0].R & 0x1f;
+	const int mask = 0xf;
+	double result = value;
+
+	if (exponent & 0x10) {
+		/* convert from two's complement */
+		exponent = -(-(exponent & mask) + (exponent & ~mask));
+	}
+
+	if (exponent > 0) {
+		for (int i = 0; i < exponent; ++i) {
+			result *= 2.0;
+		}
+	} else {
+		for (int i = 0; i < -exponent; ++i) {
+			result /= 2.0;
+		}
+	}
+	return result;
+}
+
 /*----------------------------------------------------------------------*/
 
 static void pmbus_dev_show_commands(struct pmbus_dev *pmdev)
@@ -1452,6 +1498,10 @@ static void pmbus_dev_show_commands(struct pmbus_dev *pmdev)
 			break;
 		case RW2:
 		case R2:
+			if (op->flags == FLG_FORMAT_VOUT && vout_mode_is_linear(pmdev)) {
+				format = "x16 (VOUT_MODE)";
+				break;
+			}
 			switch ((op->query >> 2) & 7) {
 			case 0:
 				if (op->units == BITS)
@@ -1571,6 +1621,10 @@ static void pmbus_dev_show_values(struct pmbus_dev *pmdev)
 			}
 			printf("  %-21s %04x: ", name, value);
 /* FIXME need decoders */
+			if (op->flags == FLG_FORMAT_VOUT && vout_mode_is_linear(pmdev)) {
+				printf("%g", pmbus_to_vout_format(pmdev, value));
+				break;
+			}
 			switch ((op->query >> 2) & 7) {
 			case 0:
 				if (op->units == BITS) {
