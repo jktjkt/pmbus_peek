@@ -219,6 +219,8 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = 0x02, .tag = "on_off_config", .type = RW1, },
 { .cmd = PMB_CLEAR_FAULT, .tag = "clear_fault", .type = W0, },
 { .cmd = 0x04, .tag = "phase", .type = RW1, },
+{ .cmd = 0x05, .tag = "page_plus_write", .type = RWB, },
+{ .cmd = 0x05, .tag = "page_plus_read", .type = RWB, },
 
 { .cmd = 0x10, .tag = "write_protect", .type = RW1, },
 { .cmd = 0x11, .tag = "store_default_all", .type = W0, },
@@ -232,6 +234,7 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = PMB_CAPABILITY, .tag = "capability", .type = R1,
 		.flags = FLG_SHOW_P1, },
 { .cmd = PMB_QUERY, .tag = "query", .type = RWP_QUERY, },
+{ .cmd = 0x1b, .tag = "smbalert_mask", .type = RWB, },
 
 { .cmd = PMB_VOUT_MODE, .tag = "vout_mode", .type = RW1, },
 { .cmd = 0x21, .tag = "vout_command", .type = RW2, },
@@ -380,6 +383,7 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = 0xa9, .tag = "mfr_tambient_min", .type = R2, .units = DEGREES_C, },
 { .cmd = 0xaa, .tag = "mfr_efficiency_ll", .type = RWB14, },
 { .cmd = 0xab, .tag = "mfr_efficiency_hl", .type = RWB14, },
+{ .cmd = 0xac, .tag = "mfr_pin_accuracy", .type = R1, },
 { .cmd = PMB_IC_DEVICE_ID, .tag = "ic_device_id", .type = RWB,
 		.units = STRING, .flags = FLG_SHOW_P1, },
 { .cmd = PMB_IC_DEVICE_REV, .tag = "ic_device_rev", .type = RWB,
@@ -401,6 +405,10 @@ static struct pmbus_cmd_desc pmbus_ops[] = {
 { .cmd = PMB_USER_DATA(13), .tag = "user_data_13", .type = RWB, },
 { .cmd = PMB_USER_DATA(14), .tag = "user_data_14", .type = RWB, },
 { .cmd = PMB_USER_DATA(15), .tag = "user_data_15", .type = RWB, },
+
+{ .cmd = 0xc0, .tag = "mfr_max_temp_1", .type = RW2, .units = DEGREES_C, },
+{ .cmd = 0xc1, .tag = "mfr_max_temp_1", .type = RW2, .units = DEGREES_C, },
+{ .cmd = 0xc2, .tag = "mfr_max_temp_1", .type = RW2, .units = DEGREES_C, },
 
 { .cmd = PMB_MFR_SPECIFIC(0),  .tag = "mfr_specific_00", },
 { .cmd = PMB_MFR_SPECIFIC(1),  .tag = "mfr_specific_01", },
